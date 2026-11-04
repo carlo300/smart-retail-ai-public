@@ -7,22 +7,22 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-SOURCE = "https://d2ol7oe51mr4n9.cloudfront.net/user_2vj4jy5DUb75jIsb3okPXuDoySx/39d48973-5f69-45a6-a402-1c25a58f096c.png"
-CHECKSUM = "29906caa62183dfa4c2b42812276e1635290eff0d895500f903c47294c063158"
+SOURCE = "https://d2ol7oe51mr4n9.cloudfront.net/user_2vj4jy5DUb75jIsb3okPXuDoySx/74b9ce59-8f5f-4058-a5d5-c80165d51c52.png"
+CHECKSUM = "82d34484a0c2c99b18f63938bee2a3779bb86b74ab3a5c3ebf114d337b286637"
 OUT = Path("app/public/assets")
 OUT.mkdir(parents=True, exist_ok=True)
 with urlopen(Request(SOURCE, headers={"User-Agent":"SmartRetailAI-BrandBuild/1.0"}), timeout=35) as resp:
     source_bytes = resp.read()
 assert hashlib.sha256(source_bytes).hexdigest() == CHECKSUM, "Approved logo source checksum mismatch"
-sheet = Image.open(io.BytesIO(source_bytes)).convert("RGBA")
-assert sheet.size == (2048,2048), "Unexpected logo sheet dimensions"
-# Crop the user's approved small pixel-art version (lower right of the uploaded image).
-cropped = sheet.crop((1749,1767,1992,2009))
-icon = Image.new("RGBA",(256,256),(0,0,0,0))
-icon.alpha_composite(cropped,((256-cropped.width)//2,(256-cropped.height)//2))
-icon.save(OUT/"srai-app-icon.png", optimize=True)
+# The user supplied a finished, edited 110x110 pixel-art master.
+# Never crop it from a collage or re-create it: preserve the exact PNG bytes.
+icon = Image.open(io.BytesIO(source_bytes)).convert("RGBA")
+assert icon.size == (110,110), "Unexpected approved logo dimensions"
+assert icon.getpixel((0,0))[3] == 0, "The icon should have transparent corners"
+(OUT/"srai-app-icon.png").write_bytes(source_bytes)
 for size in (32,180,192,512):
-    method = Image.Resampling.LANCZOS if size < 256 else Image.Resampling.NEAREST
+    # Small favicons require a proper reduction; larger formats keep hard pixel edges.
+    method = Image.Resampling.LANCZOS if size < 110 else Image.Resampling.NEAREST
     icon.resize((size,size),method).save(OUT/f"srai-app-icon-{size}.png", optimize=True)
 icon.save(Path("app/public/favicon.ico"), format="ICO", sizes=[(16,16),(32,32),(48,48),(64,64)])
 # Social card: branded graphic and only the four ORIGINAL approved cans.
