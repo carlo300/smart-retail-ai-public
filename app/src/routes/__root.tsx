@@ -99,8 +99,8 @@ function buildHead(meta: AppMeta) {
     links: [
       { rel: "stylesheet", href: appCss },
       ...(favicon ? [{ rel: "icon", href: favicon, type: "image/png", sizes: "256x256" }] : []),
-      { rel: "icon", href: "/assets/srai-app-icon-32.png", type: "image/png", sizes: "32x32" },
-      { rel: "apple-touch-icon", href: "/assets/srai-app-icon-180.png", sizes: "180x180" },
+      { rel: "icon", href: "/assets/srai-app-icon-32.png?v=pixel110", type: "image/png", sizes: "32x32" },
+      { rel: "apple-touch-icon", href: "/assets/srai-app-icon-180.png?v=pixel110", sizes: "180x180" },
       { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   };
