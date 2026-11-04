@@ -19,13 +19,20 @@ import { fileURLToPath } from "node:url";
 const QUANTA_ICONS_SHIM = fileURLToPath(
   new URL("./src/lib/quanta-material-icons.ts", import.meta.url),
 );
+const VERCEL_BINDINGS_SHIM = fileURLToPath(
+  new URL("./src/lib/vercel-bindings-shim.ts", import.meta.url),
+);
 
 export default defineConfig(({ mode }) => {
   const designInspectorEnabled = process.env.HF_DESIGN_INSPECTOR === "1" || mode === "design";
+  const isVercel = Boolean(process.env.VERCEL);
 
   return {
     resolve: {
-      alias: [{ find: /^@higgsfield-ai\/icons(\/.*)?$/, replacement: QUANTA_ICONS_SHIM }],
+      alias: [
+        { find: /^@higgsfield-ai\/icons(\/.*)?$/, replacement: QUANTA_ICONS_SHIM },
+        ...(isVercel ? [{ find: /^cloudflare:workers$/, replacement: VERCEL_BINDINGS_SHIM }] : []),
+      ],
     },
     // The server bundle runs as a Cloudflare Worker — there is no node_modules
     // at runtime. Vite's default SSR build leaves npm deps as bare external
@@ -37,12 +44,12 @@ export default defineConfig(({ mode }) => {
       // `cloudflare:workers` is a workerd runtime built-in that exposes the Worker
       // env / bindings (D1 `DB`, R2 `STORAGE`). Like node: builtins it must NOT be
       // bundled; the runtime provides it. (`ssr.external` is typed string[].)
-      external: ["cloudflare:workers"],
+      external: isVercel ? [] : ["cloudflare:workers"],
     },
     build: {
       // Keep `cloudflare:*` external in the SSR rollup pass too — `noExternal`
       // above would otherwise try to resolve+bundle it and fail.
-      rollupOptions: { external: [/^cloudflare:/] },
+      rollupOptions: { external: isVercel ? [] : [/^cloudflare:/] },
     },
     plugins: [
       // Material Symbols SVGs (the app icon set) import as React components via
