@@ -15,7 +15,6 @@ async function current(req:Request,db:NonNullable<ReturnType<typeof bindings>['D
 export const Route=createFileRoute('/api/rewards')({
  // Compatibility with TanStack Router's unaugmented FileRouteOptions type.
  // TanStack Start interprets these handlers on the server.
- // @ts-expect-error Start route server handlers are runtime-supported
  server:{handlers:{
  GET:async({request}:{request:Request})=>{const db=bindings().DB;if(!db)return reply({error:'Rewards database unavailable'},503);try{const user=await current(request,db);if(!user)return reply({profile:null});const parsed=Date.parse(user.last_seen_at.replace(' ','T')+'Z');if(Number.isFinite(parsed)&&Date.now()-parsed>20*60*1000){await db.prepare("UPDATE rewards_customers SET last_seen_at=datetime('now'),visit_count=visit_count+1 WHERE id=?").bind(user.id).run();user.visit_count++;}return reply({profile:view(user)});}catch{return reply({error:'Unable to load profile'},500);}},
  POST:async({request}:{request:Request})=>{
