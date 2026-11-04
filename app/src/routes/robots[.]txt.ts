@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/robots.txt')({
-  // @ts-expect-error TanStack Start server route handler is runtime-supported
   server: {
     handlers: {
       GET: async ({ request }: { request: Request }) => {
