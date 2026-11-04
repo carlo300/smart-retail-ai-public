@@ -1,0 +1,115 @@
+name: Verify public Smart Retail AI and refresh Rewards QR
+on:
+  push:
+    paths:
+      - '.github/workflows/verify-public.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout approved deployment source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: true
+      - name: Regenerate Rewards QR for the public host
+        shell: bash
+        run: |
+          python -m pip install --quiet --disable-pip-version-check 'qrcode[pil]==8.2'
+          python - <<'PY'
+          from PIL import Image
+          import qrcode
+          from pathlib import Path
+          path=Path('app/public/assets/smart-retail-rewards-qr.png')
+          img=Image.open(path).convert('RGBA')
+          size=img.size
+          corner=img.getpixel((0,0))
+          dark=(corner[0]*299+corner[1]*587+corner[2]*114)<128000
+          fg='#ffffff' if dark else '#13203b'
+          bg='#111e32' if dark else '#ffffff'
+          qr=qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_H, border=4, box_size=12)
+          qr.add_data('https://smart-retail-ai-public-carlo-4838.vercel.app/rewards')
+          qr.make(fit=True)
+          result=qr.make_image(fill_color=fg, back_color=bg).convert('RGBA')
+          result=result.resize(size, Image.Resampling.NEAREST)
+          result.save(path, optimize=True)
+          print(f'Updated Rewards QR: {size[0]}x{size[1]}, contrast retained')
+          PY
+      - name: Save corrected destination only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Smart Retail AI Release'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/public/assets/smart-retail-rewards-qr.png
+          if ! git diff --cached --quiet; then
+            git commit -m 'Point Rewards QR to the shareable public Vercel website'
+            git push origin HEAD:main
+          fi
+      - name: Verify complete Rewards lifecycle
+        shell: bash
+        run: |
+          node <<'JS'
+          const assert=require('node:assert/strict');
+          const base='https://smart-retail-ai-public-carlo-4838.vercel.app';
+          const api=base+'/api/rewards';
+          const headers={'Origin':base,'Content-Type':'application/json'};
+          let cookie='';
+          async function get(path, extra={}){
+            const res=await fetch(base+path,{headers:{...extra,'Cache-Control':'no-cache'}});
+            return res;
+          }
+          async function post(data){
+            const res=await fetch(api,{method:'POST',
+              headers:{...headers,...(cookie?{'Cookie':cookie}:{})},
+              body:JSON.stringify(data)});
+            const content=await res.json();
+            return {res,content};
+          }
+          (async()=>{
+            const home=await get('/');
+            assert.equal(home.status,200,'public home must return 200');
+            const html=await home.text();
+            assert.match(html,/SMART RETAIL AI|Smart Retail AI/i,'public home should render');
+            for(const path of ['/?presentation=1','/rewards','/assets/ads/bloom.mp4','/assets/ads/aura.mp4','/assets/ads/rush.mp4','/assets/ads/vivi.mp4']){
+              const r=await get(path,{'Range':'bytes=0-128'});
+              assert.ok([200,206].includes(r.status),path+' must be available anonymously');
+              await r.body?.cancel();
+            }
+            console.log('Public pages and four commercial files: OK');
+            const fresh=await get('/api/rewards');
+            assert.equal(fresh.status,200);
+            assert.equal((await fresh.json()).profile,null);
+            const attempt=await post({action:'register',firstName:'QA',
+              email:'srai-qa-'+process.env.GITHUB_RUN_ID+'@example.invalid',
+              favorite:'bloom',marketingOptIn:false,adultConfirmed:true});
+            assert.equal(attempt.res.status,201,JSON.stringify({status:attempt.res.status,error:attempt.content.error}));
+            assert.equal(attempt.content.profile.couponUsed,false);
+            cookie=(attempt.res.headers.get('set-cookie')||'').split(';')[0];
+            assert.ok(cookie.startsWith('srai_rewards_session='));
+            console.log('Rewards registration + secure session: OK');
+            const profile=await get('/api/rewards',{'Cookie':cookie});
+            assert.equal(profile.status,200);
+            assert.equal((await profile.json()).profile.firstName,'QA');
+            const prefs=await post({action:'preferences',favorite:'aura',marketingOptIn:false});
+            assert.equal(prefs.res.status,200);
+            assert.equal(prefs.content.profile.favorite,'aura');
+            console.log('Rewards preferences: OK');
+            const redeemed=await post({action:'redeem',product:'aura'});
+            assert.equal(redeemed.res.status,200);
+            assert.equal(redeemed.content.redeemed,true);
+            const second=await post({action:'redeem',product:'aura'});
+            assert.equal(second.res.status,200);
+            assert.equal(second.content.redeemed,false);
+            console.log('Single-use reward: OK');
+            const removed=await post({action:'delete'});
+            assert.equal(removed.res.status,200);
+            assert.equal(removed.content.deleted,true);
+            const after=await get('/api/rewards',{'Cookie':cookie});
+            assert.equal((await after.json()).profile,null);
+            console.log('Delete account + session invalidation: OK');
+            console.log('PUBLIC QA PASSED');
+          })().catch(e=>{console.error('QA failed:',e);process.exitCode=1});
+          JS
