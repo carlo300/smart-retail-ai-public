@@ -1,0 +1,45 @@
+name: Build approved Smart Retail AI pixel icon assets
+on:
+  push:
+    paths:
+      - '.github/workflows/build-brand-assets.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: true
+      - name: Install image tools
+        run: python -m pip install --disable-pip-version-check --quiet 'Pillow==11.3.0'
+      - name: Generate only favicon, app icons and share preview
+        run: python app/scripts/build_brand_assets.py
+      - name: Confirm transparent corners and brand preview dimensions
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          a=Path('app/public/assets')
+          icon=Image.open(a/'srai-app-icon.png')
+          card=Image.open(a/'srai-share-preview.jpg')
+          assert icon.size==(256,256)
+          assert icon.getpixel((0,0))[3]==0
+          assert card.size==(1200,630)
+          assert (a/'srai-app-icon-32.png').exists()
+          assert (a/'srai-app-icon-180.png').exists()
+          assert (a/'srai-app-icon-192.png').exists()
+          assert (a/'srai-app-icon-512.png').exists()
+          print('Brand outputs verified')
+          PY
+      - name: Save approved brand assets
+        run: |
+          git config user.name 'Smart Retail AI Branding'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/public/favicon.ico app/public/assets/srai-app-icon*.png app/public/assets/srai-share-preview.jpg
+          if ! git diff --cached --quiet; then
+            git commit -m "Add approved small pixel-art logo and branded link thumbnail"
+            git push origin HEAD:main
+          fi
