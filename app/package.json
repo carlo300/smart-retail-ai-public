@@ -75,7 +75,8 @@
     "vaul": "^1.1.2",
     "vite-tsconfig-paths": "^6.0.2",
     "zod": "^4.0.0",
-    "@base-ui/react": "1.5.0"
+    "@base-ui/react": "1.5.0",
+    "@vercel/blob": "^2.3.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260615.1",
