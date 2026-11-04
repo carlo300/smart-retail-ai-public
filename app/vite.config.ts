@@ -1,4 +1,5 @@
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { nitro } from "nitro/vite";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import {
@@ -74,6 +75,8 @@ export default defineConfig(({ mode }) => {
       tanstackStart({
         server: { entry: "server" },
       }),
+      // Vercel uses Nitro for its server runtime; the original Cloudflare build stays unchanged.
+      ...(process.env.VERCEL ? [nitro()] : []),
       higgsfieldDesignInspectorVitePlugin(designInspectorEnabled),
       react({
         babel: {
