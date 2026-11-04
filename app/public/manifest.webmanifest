@@ -1,0 +1,24 @@
+{
+  "name": "Smart Retail AI",
+  "short_name": "Smart Retail",
+  "description": "Interactive intelligent retail fridge demo with product ads, audience mode, Rewards, and analytics.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090d22",
+  "theme_color": "#0b1024",
+  "icons": [
+    {
+      "src": "/assets/srai-app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/srai-app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
