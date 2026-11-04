@@ -86,6 +86,9 @@ function buildHead(meta: AppMeta) {
       ...(ogImage
         ? [
             { property: "og:image", content: ogImage },
+            { property: "og:image:width", content: "1200" },
+            { property: "og:image:height", content: "630" },
+            { property: "og:image:alt", content: "Smart Retail AI — interactive fridge, AI mascot and four original beverage campaigns" },
             { name: "twitter:image", content: ogImage },
           ]
         : []),
@@ -95,7 +98,10 @@ function buildHead(meta: AppMeta) {
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      ...(favicon ? [{ rel: "icon", href: favicon }] : []),
+      ...(favicon ? [{ rel: "icon", href: favicon, type: "image/png", sizes: "256x256" }] : []),
+      { rel: "icon", href: "/assets/srai-app-icon-32.png", type: "image/png", sizes: "32x32" },
+      { rel: "apple-touch-icon", href: "/assets/srai-app-icon-180.png", sizes: "180x180" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   };
 }
