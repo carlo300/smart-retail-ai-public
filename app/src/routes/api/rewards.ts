@@ -12,9 +12,13 @@ async function digest(token:string){const h=await crypto.subtle.digest('SHA-256'
 function setSession(token:string,age=7776000){return COOKIE+'='+token+'; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age='+age;}
 function view(u:Customer){return {id:u.id,firstName:u.first_name,email:u.email,favorite:u.favorite_product,marketingOptIn:!!u.marketing_opt_in,couponCode:u.coupon_code,couponUsed:!!u.coupon_redeemed_at,redeemedProduct:u.redeemed_product,visits:u.visit_count,joinedAt:u.created_at};}
 async function current(req:Request,db:NonNullable<ReturnType<typeof bindings>['DB']>){const token=rawSession(req);return token?db.prepare('SELECT * FROM rewards_customers WHERE session_hash=?').bind(await digest(token)).first<Customer>():null;}
-export const Route=createFileRoute('/api/rewards')({server:{handlers:{
- GET:async({request})=>{const db=bindings().DB;if(!db)return reply({error:'Rewards database unavailable'},503);try{const user=await current(request,db);if(!user)return reply({profile:null});const parsed=Date.parse(user.last_seen_at.replace(' ','T')+'Z');if(Number.isFinite(parsed)&&Date.now()-parsed>20*60*1000){await db.prepare("UPDATE rewards_customers SET last_seen_at=datetime('now'),visit_count=visit_count+1 WHERE id=?").bind(user.id).run();user.visit_count++;}return reply({profile:view(user)});}catch{return reply({error:'Unable to load profile'},500);}},
- POST:async({request})=>{
+export const Route=createFileRoute('/api/rewards')({
+ // Compatibility with TanStack Router's unaugmented FileRouteOptions type.
+ // TanStack Start interprets these handlers on the server.
+ // @ts-expect-error Start route server handlers are runtime-supported
+ server:{handlers:{
+ GET:async({request}:{request:Request})=>{const db=bindings().DB;if(!db)return reply({error:'Rewards database unavailable'},503);try{const user=await current(request,db);if(!user)return reply({profile:null});const parsed=Date.parse(user.last_seen_at.replace(' ','T')+'Z');if(Number.isFinite(parsed)&&Date.now()-parsed>20*60*1000){await db.prepare("UPDATE rewards_customers SET last_seen_at=datetime('now'),visit_count=visit_count+1 WHERE id=?").bind(user.id).run();user.visit_count++;}return reply({profile:view(user)});}catch{return reply({error:'Unable to load profile'},500);}},
+ POST:async({request}:{request:Request})=>{
   const db=bindings().DB;if(!db)return reply({error:'Rewards database unavailable'},503);
   if(request.headers.get('origin')!==new URL(request.url).origin)return reply({error:'Invalid origin'},403);
   if(!(request.headers.get('content-type')||'').startsWith('application/json'))return reply({error:'Invalid format'},400);
