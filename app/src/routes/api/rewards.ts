@@ -1,5 +1,6 @@
 import {createFileRoute} from '@tanstack/react-router';
 import {bindings} from '../../lib/bindings.server';
+import {serveVercelRewards} from '../../lib/vercel-rewards.server';
 
 type Customer={id:string;first_name:string;email:string;favorite_product:string;marketing_opt_in:number;coupon_code:string;coupon_redeemed_at:string|null;redeemed_product:string|null;created_at:string;last_seen_at:string;visit_count:number};
 const COOKIE='srai_rewards_session';
@@ -16,9 +17,9 @@ export const Route=createFileRoute('/api/rewards')({
  // Compatibility with TanStack Router's unaugmented FileRouteOptions type.
  // TanStack Start interprets these handlers on the server.
  server:{handlers:{
- GET:async({request}:{request:Request})=>{const db=bindings().DB;if(!db)return reply({error:'Rewards database unavailable'},503);try{const user=await current(request,db);if(!user)return reply({profile:null});const parsed=Date.parse(user.last_seen_at.replace(' ','T')+'Z');if(Number.isFinite(parsed)&&Date.now()-parsed>20*60*1000){await db.prepare("UPDATE rewards_customers SET last_seen_at=datetime('now'),visit_count=visit_count+1 WHERE id=?").bind(user.id).run();user.visit_count++;}return reply({profile:view(user)});}catch{return reply({error:'Unable to load profile'},500);}},
+ GET:async({request}:{request:Request})=>{const db=bindings().DB;if(!db)return process.env.VERCEL ? serveVercelRewards(request) : reply({error:'Rewards database unavailable'},503);try{const user=await current(request,db);if(!user)return reply({profile:null});const parsed=Date.parse(user.last_seen_at.replace(' ','T')+'Z');if(Number.isFinite(parsed)&&Date.now()-parsed>20*60*1000){await db.prepare("UPDATE rewards_customers SET last_seen_at=datetime('now'),visit_count=visit_count+1 WHERE id=?").bind(user.id).run();user.visit_count++;}return reply({profile:view(user)});}catch{return reply({error:'Unable to load profile'},500);}},
  POST:async({request}:{request:Request})=>{
-  const db=bindings().DB;if(!db)return reply({error:'Rewards database unavailable'},503);
+  const db=bindings().DB;if(!db)return process.env.VERCEL ? serveVercelRewards(request) : reply({error:'Rewards database unavailable'},503);
   if(request.headers.get('origin')!==new URL(request.url).origin)return reply({error:'Invalid origin'},403);
   if(!(request.headers.get('content-type')||'').startsWith('application/json'))return reply({error:'Invalid format'},400);
   if(Number(request.headers.get('content-length')||0)>4096)return reply({error:'Request too large'},413);
