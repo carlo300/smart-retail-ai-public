@@ -963,6 +963,6 @@
 
 /* Approved pixel-art mascot; keeps the existing header and Rewards layout. */
 .brand-icon{overflow:hidden}
-.brand-pixel-icon{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+.brand-pixel-icon{display:block;width:100%;height:100%;object-fit:contain;image-rendering:auto}
 .reward-brand{display:inline-flex;align-items:center;gap:6px}
-.reward-brand img{display:block;width:27px;height:27px;object-fit:contain;flex:none;image-rendering:pixelated}
+.reward-brand img{display:block;width:27px;height:27px;object-fit:contain;flex:none;image-rendering:auto}
