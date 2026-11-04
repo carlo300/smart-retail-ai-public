@@ -72,11 +72,11 @@ export default defineConfig(({ mode }) => {
       // SSR-safe: never touch browser-only globals (window, document,
       // localStorage, navigator) during render or at module top level — only
       // inside effects/handlers, or guarded with `typeof window !== "undefined"`.
-      tanstackStart({
-        server: { entry: "server" },
-      }),
-      // Vercel uses Nitro for its server runtime; the original Cloudflare build stays unchanged.
-      ...(process.env.VERCEL ? [nitro()] : []),
+      // On Vercel use the framework's standard entry, as recommended by its Nitro adapter.
+      // Keep the original Higgsfield/Cloudflare entry for the source-hosted version.
+      ...(process.env.VERCEL
+        ? [tanstackStart(), nitro()]
+        : [tanstackStart({ server: { entry: "server" } })]),
       higgsfieldDesignInspectorVitePlugin(designInspectorEnabled),
       react({
         babel: {
