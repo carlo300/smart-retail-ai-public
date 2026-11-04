@@ -1,8 +1,8 @@
 {
   "og_title": "Smart Retail AI | Interactive Fridge Web Demo",
   "og_description": "Experience the next-generation intelligent retail fridge: original beverage campaigns, product spotlight, audience mode and simulated analytics.",
-  "og_image_url": "https://smart-retail-ai-public-carlo-4838.vercel.app/assets/srai-share-preview.jpg",
-  "favicon_url": "/assets/srai-app-icon.png",
-  "marketplace_cover_url": "/assets/srai-share-preview.jpg",
+  "og_image_url": "https://smart-retail-ai-public-carlo-4838.vercel.app/assets/srai-share-preview.jpg?v=pixel110",
+  "favicon_url": "/assets/srai-app-icon.png?v=pixel110",
+  "marketplace_cover_url": "/assets/srai-share-preview.jpg?v=pixel110",
   "og_video_url": null
 }
